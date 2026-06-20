@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "flue dev --target cloudflare",
     "dev:client": "vite",
-    "build": "vite build && flue build --target cloudflare",
+    "build": "vite build && flue build --target cloudflare && node scripts/patch-flue-bundle.mjs",
     "deploy": "npm run build && wrangler deploy --config dist/cf_agentic_launchpad/wrangler.json",
     "typecheck": "tsc --noEmit"
   },
