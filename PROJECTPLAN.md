@@ -172,12 +172,16 @@ Build order (de-risked, riskiest integration validated early):
    a container-backed Durable Object; exec, run, and file read/write/list under
    `/demos/sandbox/api`; Dockerfile and container config. Deployed and verified
    live (exec and JS/TS interpreter work).
-2. **Flue build + minimal agent (done):** restructured to Flue's Cloudflare
-   build (`flue build --target cloudflare`). `src/app.ts` mounts `flue()` plus
-   our routes; `src/cloudflare.ts` exports the Sandbox class; `src/agents/
-   app-builder.ts` is a minimal keyless agent (Workers AI binding). Client builds
-   to `dist/client`, served via `ASSETS`. Build, typecheck, and `wrangler
-   --dry-run` all pass under Node 22.
+2. **Flue build + minimal agent + deploy (done):** restructured to Flue's
+   Cloudflare build (`flue build --target cloudflare`). `src/app.ts` mounts
+   `flue()` plus our routes; `src/cloudflare.ts` exports the Sandbox class;
+   `src/agents/app-builder.ts` is a minimal keyless agent (Workers AI binding,
+   `cloudflare/...` provider). Client builds to `dist/client`, served via
+   `ASSETS`. **Deployed live** at `https://cf-agentic-launchpad.timcf.workers.dev`
+   (verified: `/llms.txt`, shell, robots, sitemap). Styling fixed (plain CSS
+   tokens; see Known issues). A post-build patch
+   (`scripts/patch-flue-bundle.mjs`) guards a Flue-beta `createRequire` startup
+   crash. The `app-builder` agent is still a stub (no tools/UI yet).
 3. **App Builder backend (next):** attach the container sandbox to the agent
    (`cloudflareSandbox(getSandbox(env.Sandbox, id))`) and its build-and-ship
    tools: write project files, install dependencies, run
@@ -212,7 +216,7 @@ once the Sandbox pattern is proven.
 - **Public remote:** GitHub (`cougz/cf-agentic-launchpad`).
 - **Mirror remote:** GitLab (`tim.seiffert/cf-agentic-launchpad`) via dual-push.
 - **Workers Builds** auto-deploys on push to `main`. Build command `npm run build` (client + `flue build`); deploy command `npx wrangler deploy --config dist/cf_agentic_launchpad/wrangler.json` (Flue's generated config).
-- `wrangler.jsonc` carries all bindings (DO, AI, KV) so Builds needs zero manual config.
+- `wrangler.jsonc` carries the bindings (Sandbox DO, AI, assets) and migrations; Flue merges its generated agent DO bindings at build time.
 - Public-repo hygiene: secret scanning, `.env.example`, no committed credentials.
 
 ---
@@ -226,15 +230,64 @@ once the Sandbox pattern is proven.
 ---
 
 ## 12. Open Decisions
-1. **License** - Apache-2.0 vs. MIT.
+1. **License** - resolved: MIT (`LICENSE`).
 2. **Ownership** - who owns the repo and the contribution process.
 
 ---
 
-## 13. Immediate Next Steps
-1. Confirm OSS license.
-2. Connect Workers Builds to the GitHub repo.
-3. Scaffold the shell and ship an empty deployed gallery surface (the walking skeleton).
+## 13. Known issues and workarounds
+
+Captured in `AGENTS.md` ("Known workarounds and gotchas"); summary:
+
+- **`createRequire` startup crash (Flue beta):** patched post-build by
+  `scripts/patch-flue-bundle.mjs`. `wrangler --dry-run` does not catch startup
+  errors; validate with `wrangler dev` or a real deploy.
+- **Styling:** define tokens as plain `:root` CSS vars (not Tailwind `@theme`,
+  which tree-shakes `var()`-only tokens) and avoid `light-dark()` (minifier
+  polyfill). This caused the serif-font regression, now fixed.
+- **Container app conflict on deploy:** if "already an application ... different
+  durable object namespace", delete the stale container app
+  (`wrangler containers delete cf-agentic-launchpad-sandbox`) and redeploy.
+- **Large bundle:** Flue bundles many provider SDKs (~1.6 MiB gzip); fine on
+  paid, a future trim opportunity.
+
+---
+
+## 14. Handoff: next session
+
+State at handoff: the foundation is deployed and live; the shell renders
+correctly (kumo styling, dark/light, orange accent); the `app-builder` agent is
+a stub. Repo, GitHub, and GitLab are in sync; Workers Builds deploys on push.
+
+Next is **Phase 1 step 3 + 4 (App Builder)**:
+
+1. **Wire the agent to the sandbox.** In `src/agents/app-builder.ts`, set
+   `sandbox: cloudflareSandbox(getSandbox(env.Sandbox, id))` (import
+   `cloudflareSandbox` from `@flue/runtime/cloudflare`). Give the agent tools to
+   scaffold files, run `npm install`, run `npx wrangler deploy --temporary` in
+   the container, and parse the live URL + claim URL from stdout.
+   - The container has Node + git; ensure Wrangler >= 4.102 inside it
+     (`npx wrangler@latest`). Do NOT inject Cloudflare credentials into the
+     container (`--temporary` errors if authenticated).
+2. **Build the UI.** Add `@flue/react`; create a Sandbox/App-Builder route in
+   `src/shell` with a prompt box, the agent tool-call/log stream
+   (`GET /agents/app-builder/:id`), a live iframe of the deployed app, and a
+   "Claim this app" button. Register it as the first gallery tile on the Home
+   page (replace the "No modules yet" empty state with a tile grid).
+3. **Verify** end to end against the live deploy. Use `wrangler dev` for fast
+   local startup checks (not just `--dry-run`). A real agent prompt should call
+   Workers AI (free allocation) and stream tool calls.
+4. **Extract the template** (`demos/_template` or a documented "copy this agent")
+   and add a per-module `SKILL.md`.
+
+How to run / validate (Node 22):
+`npm install` -> `npm run build` (vite + flue + patch) ->
+`npx wrangler deploy --config dist/cf_agentic_launchpad/wrangler.json`, or just
+`git push` (Workers Builds). Wrangler is already authenticated in the working
+environment as `tim.seiffert@cloudflare.com`.
+
+Reference docs to read first: `npx flue docs read ecosystem/deploy/cloudflare`,
+`guide/react`, `guide/tools`; and `https://developers.cloudflare.com/workers/platform/claim-deployments/`.
 
 ---
 

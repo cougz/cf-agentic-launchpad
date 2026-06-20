@@ -17,21 +17,30 @@ Thanks for your interest in cf-agentic-launchpad.
 
 - **No em-dashes.** The long dash character (U+2014) is blocked in file content
   and commit messages by the git hooks. Use a regular hyphen or rephrase.
-- **No secrets in the repo.** Use `.env.example` for placeholders only.
-- **Skeleton scope.** Do not add demo modules until `PROJECTPLAN.md` expands the
-  scope.
+- **No secrets in the repo.** Use `.env.example` / `.dev.vars` for placeholders only.
+- **Module scope.** Add demo modules only when `PROJECTPLAN.md` scopes them, and
+  only if they pass the module admission criteria in `AGENTS.md`.
+- **Styling.** Define design tokens as plain CSS variables in
+  `src/shell/tokens.css` (not Tailwind `@theme`, which tree-shakes tokens used
+  only via `var()`), and do not use the CSS `light-dark()` function (the build
+  minifier rewrites it into a fragile polyfill). See `AGENTS.md`.
 
 ## Workflow
 
+Use Node 22 (see `.nvmrc`).
+
 ```bash
 npm install
-npm run dev        # local dev server
-npm run typecheck  # type checks
-npm run build      # production build
+bash scripts/setup-hooks.sh   # one-time: enable the em-dash guard
+npm run dev                   # Flue dev server (Worker + agents), port 3583
+npm run dev:client            # or: the React shell via Vite
+npm run typecheck             # type checks
+npm run build                 # vite build (client) + flue build (Worker) + patch
 ```
 
 Commit and push to `main`. Cloudflare Workers Builds builds and deploys
-automatically. Do not run `wrangler deploy` by hand.
+automatically (it deploys Flue's generated config). Do not run `wrangler deploy`
+by hand.
 
 ## Commit messages
 

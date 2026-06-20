@@ -39,13 +39,17 @@ The foundation (shell, design tokens, agent-readiness, git-push deploy) is in pl
 
 ## Current scope
 
-- Foundation (done): Flue-built Worker, React shell served via `ASSETS`,
-  design tokens, agent-readiness endpoints, container sandbox wired in, git-push
-  deploy. Deployed and verified live.
-- Phase 1 (in progress): the **AI App Builder** module. A minimal Flue agent is
-  in place; next steps attach the sandbox build-and-ship tools and the UI.
+- Foundation (done, deployed live): Flue-built Worker, React shell served via
+  `ASSETS` with on-brand kumo styling (dark/light, orange accent), agent-ready
+  endpoints, container sandbox wired in, keyless Workers AI agent, git-push
+  deploy. Verified live.
+- Phase 1 (in progress): the **AI App Builder** module. The Flue agent is a
+  stub today; the next steps attach the sandbox build-and-ship tools
+  (`wrangler deploy --temporary`) and the streaming UI.
 
-See [`PROJECTPLAN.md`](./PROJECTPLAN.md) for the full plan.
+See [`PROJECTPLAN.md`](./PROJECTPLAN.md) for the full plan, known issues, and the
+**Handoff: next session** section that tells the next contributor exactly where
+to pick up.
 
 ## Quick start
 

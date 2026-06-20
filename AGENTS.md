@@ -21,6 +21,13 @@ cloudflare` generates the Worker entry, the agent Durable Object classes, and a
 deployable `dist/cf_agentic_launchpad/wrangler.json`. You deploy that generated
 config, not the source-root `wrangler.jsonc`.
 
+Current state (keep this updated): the foundation is built and **deployed live**
+on the Flue stack (shell + agent-ready endpoints + container sandbox + a minimal
+`app-builder` agent). The styling is fixed and on-brand. The `app-builder` agent
+is a **stub** (model + instructions only) - it does not use the sandbox or any
+tools yet. The next step is to give it the build-and-ship tools and a UI (see
+PROJECTPLAN.md, Phase 1 step 3, and the Handoff section there).
+
 ## Setup commands
 
 Use Node 22 (see `.nvmrc`).
@@ -64,6 +71,14 @@ Before finishing any task, run the checks that apply and fix all failures:
   in intra-project imports (Flue's build expects them).
 - Styling uses only the in-repo design tokens (`src/shell/tokens.css`). Never
   use raw hex values and never add a second styling system.
+- **Define tokens as plain `:root` CSS variables, NOT Tailwind `@theme`.**
+  Tailwind v4 tree-shakes `@theme` tokens that are only referenced via `var()`
+  in plain CSS, which silently drops them (this is what made the shell render in
+  a serif font once). `tokens.css` uses a plain `:root` plus a
+  `@media (prefers-color-scheme: dark)` override.
+- **Do not use the CSS `light-dark()` function.** The build minifier rewrites it
+  into a fragile `var(--lightningcss-*)` polyfill. Use the theme-aware tokens
+  (`--canvas`, `--text`, `--surface`, `--line`, etc.) instead.
 
 ## Security considerations
 
@@ -114,7 +129,9 @@ wrangler.jsonc     # source config Flue reads (bindings, migrations, container, 
 Dockerfile         # container image for the Sandbox module
 tsconfig.json      # TypeScript config (strict)
 .githooks/         # em-dash guard hooks (pre-commit, commit-msg)
-scripts/           # setup-hooks.sh and future helpers
+scripts/
+  setup-hooks.sh        # enable the git hooks
+  patch-flue-bundle.mjs # post-build workaround (see Known workarounds below)
 src/               # Flue source dir (Flue discovers app.ts, cloudflare.ts, agents/)
   app.ts           # Hono app: agent-ready endpoints + sandbox API + flue()
   cloudflare.ts    # Cloudflare-only Worker exports (export Sandbox)
@@ -167,6 +184,29 @@ these, do not build it; propose a better-fitting one.
 - this `AGENTS.md` at the repo root
 
 Reference: https://isitagentready.com
+
+## Known workarounds and gotchas
+
+These are real issues hit during setup. Do not "clean them up" without
+understanding why they exist.
+
+- **`createRequire` startup crash (Flue beta).** Flue's rolldown runtime emits
+  `createRequire(import.meta.url)` in a split chunk where `import.meta.url` is
+  undefined on the edge, so the Worker throws at startup (Wrangler error 10021).
+  `scripts/patch-flue-bundle.mjs` runs after `flue build` and guards that call.
+  Keep it until Flue ships a fix. Note: `wrangler deploy --dry-run` does NOT
+  catch startup errors; use `wrangler dev` or a real deploy to validate startup.
+- **Styling tree-shaking / light-dark.** See Code style above. Tokens must be
+  plain `:root` vars; never `@theme`-only or `light-dark()`.
+- **Container application conflict on deploy.** If a deploy fails with
+  "There is already an application with the name cf-agentic-launchpad-sandbox
+  ... associated with a different durable object namespace", a stale container
+  app from an earlier deploy is bound to an old Sandbox DO namespace. Fix:
+  `npx wrangler containers list` then `npx wrangler containers delete
+  cf-agentic-launchpad-sandbox`, then redeploy. (Durable Objects cannot be
+  deleted individually; they are owned by the Worker.)
+- **Large Worker bundle.** Flue bundles many model-provider SDKs (~1.6 MiB
+  gzip). Within paid limits, but a future optimization is trimming providers.
 
 ## Flue docs (offline, version-matched)
 
