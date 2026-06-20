@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# commit-msg: block commit messages containing an em-dash (U+2014).
+#
+set -euo pipefail
+
+msgfile="$1"
+
+# Literal em-dash (U+2014) as UTF-8 bytes; fixed-string match under C locale.
+emdash=$'\xe2\x80\x94'
+
+if LC_ALL=C grep -nF "$emdash" "$msgfile" >/dev/null 2>&1; then
+  echo "Em-dash (U+2014) found in commit message:"
+  LC_ALL=C grep -nF "$emdash" "$msgfile" | sed 's/^/  /'
+  echo ""
+  echo "Commit blocked: remove em-dashes from the message (use '-' or rephrase)."
+  exit 1
+fi
+
+exit 0

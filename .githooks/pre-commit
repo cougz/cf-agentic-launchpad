@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#
+# pre-commit: block any staged file content containing an em-dash (U+2014).
+# Replace em-dashes with '-' or rephrase, then re-stage.
+#
+set -euo pipefail
+
+# Literal em-dash (U+2014) as UTF-8 bytes; matched as a fixed string under the
+# C locale so detection does not depend on the user's locale settings.
+emdash=$'\xe2\x80\x94'
+status=0
+
+while IFS= read -r -d '' f; do
+  [ -f "$f" ] || continue
+  if LC_ALL=C grep -nF "$emdash" "$f" >/dev/null 2>&1; then
+    echo "Em-dash (U+2014) found in: $f"
+    LC_ALL=C grep -nF "$emdash" "$f" | sed 's/^/  /'
+    status=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM -z)
+
+if [ "$status" -ne 0 ]; then
+  echo ""
+  echo "Commit blocked: em-dash (the long dash) detected in staged content."
+  echo "Use '-' or rephrase, then re-stage and commit again."
+  exit 1
+fi
+
+exit 0
