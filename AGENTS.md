@@ -101,7 +101,9 @@ src/
   shell/           # React + TanStack Router + Tailwind tokens
     routes/        # route components
   worker/          # Hono router + agent-ready endpoints (serves /llms.txt)
-demos/             # empty; future home for self-contained modules
+demos/
+  sandbox/         # Sandbox module (Phase 1): @cloudflare/sandbox backend routes
+Dockerfile         # container image for the Sandbox module
 ```
 
 Note: `llms.txt` is served by the Worker at `/llms.txt` (its source lives in

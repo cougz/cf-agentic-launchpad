@@ -15,13 +15,24 @@
   // workers_dev: serve on the <name>.<subdomain>.workers.dev URL.
   // preview_urls: per-version preview URLs (handy with Workers Builds).
   "workers_dev": true,
-  "preview_urls": true
-  // Bindings such as Durable Objects, KV, and AI are added when modules
-  // need them. They are intentionally omitted from the skeleton so the
-  // app deploys with zero manual resource setup. Example (add later):
-  //
+  "preview_urls": true,
+
+  // Sandbox module (@cloudflare/sandbox): a container-backed Durable Object
+  // that executes code and commands in an isolated Linux environment.
+  "containers": [
+    {
+      "class_name": "Sandbox",
+      "image": "./Dockerfile",
+      "instance_type": "lite",
+      "max_instances": 1
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "class_name": "Sandbox", "name": "Sandbox" }]
+  },
+  "migrations": [{ "new_sqlite_classes": ["Sandbox"], "tag": "v1" }]
+
+  // Additional bindings (KV, AI) are added when modules need them.
   // "ai": { "binding": "AI" },
-  // "kv_namespaces": [{ "binding": "KV", "id": "<created-id>" }],
-  // "durable_objects": { "bindings": [{ "name": "AGENT", "class_name": "Agent" }] },
-  // "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Agent"] }]
+  // "kv_namespaces": [{ "binding": "KV", "id": "<created-id>" }]
 }

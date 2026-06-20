@@ -1,10 +1,16 @@
 import { Hono } from "hono";
+import { getSandbox } from "@cloudflare/sandbox";
+import { sandboxRoutes } from "../../demos/sandbox/routes";
 
-// Minimal binding surface for the skeleton. The ASSETS binding serves the
-// built React shell. More bindings (AI, KV, Durable Objects) are added when
-// modules need them.
+// The Sandbox module's container-backed Durable Object. The class must be
+// re-exported from the Worker entry for the runtime to find it.
+export { Sandbox } from "@cloudflare/sandbox";
+
+// Binding surface. ASSETS serves the built React shell. Sandbox is the
+// container-backed Durable Object namespace used by the Sandbox module.
 interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
+  Sandbox: Parameters<typeof getSandbox>[0];
 }
 
 // Agent-readiness response headers applied to every response. See
@@ -81,6 +87,9 @@ async function serveAsset(env: Env, request: Request): Promise<Response> {
 app.get("/llms.txt", () => text(LLMS_TXT, "text/plain; charset=utf-8"));
 app.get("/robots.txt", () => text(ROBOTS_TXT, "text/plain; charset=utf-8"));
 app.get("/sitemap.xml", () => text(SITEMAP_XML, "application/xml; charset=utf-8"));
+
+// Sandbox module backend (container-backed code execution).
+app.route("/demos/sandbox/api", sandboxRoutes);
 
 // Markdown content negotiation on the root.
 app.get("/", (c) => {

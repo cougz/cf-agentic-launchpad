@@ -96,9 +96,11 @@ cf-agentic-launchpad/
 
 ## 6. Scope
 
-**In scope (this phase):** the walking skeleton only - shell, Worker, design tokens, agent-readiness scaffolding, and the git-push deploy pipeline.
+**Done (Phase 0):** the walking skeleton - shell, Worker, design tokens, agent-readiness scaffolding, and the git-push deploy pipeline. Deployed and live.
 
-**Out of scope (deferred):** all demo modules. No capabilities are implemented yet; modules are a later effort defined in a future revision of this plan.
+**In scope (Phase 1):** the first demo module, **Sandbox**, built on `@cloudflare/sandbox`. A Flue agent drives a container-backed Durable Object that executes code and commands in an isolated Linux environment, streamed into the shell. This module also establishes the reusable per-module pattern (`demos/<name>/`) that later modules copy.
+
+**Out of scope (deferred):** all other modules (AI Gateway, MCP server, Containers app, Zero Trust, multi-channel). They are defined in a later revision once the Sandbox pattern is proven.
 
 ---
 
@@ -123,23 +125,47 @@ Reference: [isitagentready.com](https://isitagentready.com)
 | R1 | Flue is an early beta; API churn | Pin exact versions; keep the skeleton free of deep Flue coupling until modules are scoped. |
 | R2 | Design tokens drift from Cloudflare's public look over time | Tokens are self-contained and versioned in-repo; update deliberately. |
 | R3 | Secrets committed to a public repo | `.env.example` only; secrets via Workers Builds env; secret scanning enabled. |
+| R4 | Sandbox needs Cloudflare Containers (paid plan) and Docker at deploy | Documented in the README deploy section; Workers Builds provides Docker; the foundation stays deployable without the module if Containers are unavailable. |
+| R5 | Container build adds time and a Docker dependency to deploys | `lite` instance and a lean Dockerfile; image tag pinned to the SDK version. |
 
 ---
 
 ## 9. Delivery Plan
 
-### Phase 0 - Skeleton (current and only committed phase)
+### Phase 0 - Skeleton (complete)
 **Exit criteria:** a clean foundation deploys via git push and is agent-buildable.
-- Pin Flue + Agents SDK versions.
-- Public GitHub repo; OSS license; secret-scanning + `.env.example`.
-- Connect Workers Builds.
-- Define the public design-token set (Tailwind config).
-- Scaffold the React + TanStack + Hono shell; deploy an empty gallery surface.
-- Establish agent-readiness scaffolding.
-- Write `AGENTS.md` + `llms.txt`.
+- Public GitHub repo; MIT license; secret-scanning + `.env.example`. Done.
+- Workers Builds connected; deploys on push. Done.
+- Public design-token set (Tailwind v4). Done.
+- React + TanStack + Hono shell; empty gallery surface; deployed. Done.
+- Agent-readiness scaffolding and `AGENTS.md`. Done.
+
+### Phase 1 - Sandbox module (in progress)
+**Exit criteria:** a working Sandbox demo, built on the Flue stack, that deploys
+via git push and is extractable as the per-module template.
+
+Build order (de-risked, simplest surface first):
+
+1. **Backend plumbing (done):** `@cloudflare/sandbox` wired into the Worker as a
+   container-backed Durable Object. `demos/sandbox/routes.ts` exposes exec, run
+   (code interpreter), and file read/write/list under `/demos/sandbox/api`.
+   Dockerfile and container config in `wrangler.jsonc`. Build and typecheck pass.
+2. **Module UI:** a Sandbox console route in the shell (command input, output,
+   code runner, file view) using the design tokens; registered as a gallery tile.
+3. **Flue agent:** a Flue agent that drives the sandbox as a tool, with
+   `@flue/react` streaming tool calls and results into the UI. This is the
+   headline of the showcase and the riskiest part (Flue is beta), so it is
+   layered on last, on top of a proven sandbox + UI.
+4. **Template + agent-readiness:** extract `demos/_template/`, add a per-module
+   `SKILL.md`, and confirm the module is extractable into its own repo.
+
+Notes:
+- Backed by Workers AI for the model, so no external API keys are required.
+- Preview URLs (port exposure) use quick tunnels, which work on `.workers.dev`.
 
 ### Future (not yet scoped)
-Demo modules, a per-module template, and launch/enablement work will be defined in a later revision once the skeleton is complete. They are intentionally excluded here.
+Additional modules and launch/enablement work are defined in a later revision
+once the Sandbox pattern is proven.
 
 ---
 
