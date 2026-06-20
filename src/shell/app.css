@@ -1,10 +1,11 @@
 @import "tailwindcss";
 @import "./tokens.css";
 
-/* Automatic light/dark via the platform. */
-:root {
-  color-scheme: light dark;
-}
+/*
+ * Shell styles. Colors and fonts come from the plain CSS variables in
+ * tokens.css (not Tailwind @theme, which tree-shakes tokens that are only
+ * used via var()). That is why earlier the font fell back to serif.
+ */
 
 * {
   box-sizing: border-box;
@@ -17,8 +18,8 @@ body {
 }
 
 body {
-  background: light-dark(#ffffff, #0f0f0f);
-  color: light-dark(#262626, #f0e3de);
+  background: var(--canvas);
+  color: var(--text);
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -46,9 +47,10 @@ a {
   justify-content: space-between;
   gap: 16px;
   padding: 16px 24px;
-  background: light-dark(rgba(255, 255, 255, 0.8), rgba(15, 15, 15, 0.8));
+  background: var(--header-bg);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--color-line);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
 }
 
 .shell-brand {
@@ -57,6 +59,7 @@ a {
   gap: 10px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 .shell-brand .dot {
@@ -65,18 +68,19 @@ a {
   border-radius: var(--radius-pill);
   background: var(--color-accent);
   display: inline-block;
+  align-self: center;
 }
 
 .shell-brand .sub {
   font-weight: 400;
-  color: light-dark(var(--color-text-muted), #9a9390);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .shell-nav {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: light-dark(var(--color-text-subtle), #737373);
+  color: var(--text-subtle);
 }
 
 .shell-main {
@@ -88,10 +92,10 @@ a {
 }
 
 .shell-footer {
-  border-top: 1px solid var(--color-line);
+  border-top: 1px solid var(--line);
   padding: 20px 24px;
   font-size: 13px;
-  color: light-dark(var(--color-text-subtle), #737373);
+  color: var(--text-subtle);
   text-align: center;
 }
 
@@ -103,7 +107,7 @@ a {
 .hero-eyebrow {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: light-dark(var(--color-text-subtle), #737373);
+  color: var(--color-accent);
   margin: 0 0 16px;
 }
 
@@ -114,26 +118,27 @@ a {
   font-weight: 600;
   margin: 0 0 16px;
   max-width: 18ch;
+  color: var(--text);
 }
 
 .hero-lead {
   font-size: 18px;
-  color: light-dark(var(--color-text-muted), #9a9390);
+  color: var(--text-muted);
   max-width: 60ch;
   margin: 0 0 40px;
 }
 
 .gallery-empty {
-  border: 1px dashed var(--color-line);
+  border: 1px dashed var(--line);
   border-radius: var(--radius-card);
   padding: 48px 24px;
   text-align: center;
-  color: light-dark(var(--color-text-muted), #9a9390);
-  background: light-dark(var(--color-elevated), #171717);
+  color: var(--text-muted);
+  background: var(--surface);
 }
 
 .gallery-empty strong {
-  color: light-dark(var(--color-text), #f0e3de);
+  color: var(--text);
 }
 
 @media (max-width: 640px) {
