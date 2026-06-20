@@ -142,19 +142,25 @@ Reference: [isitagentready.com](https://isitagentready.com)
 
 ### Phase 1 - Sandbox module: AI App Builder (in progress)
 **Experience:** a Flue agent takes a prompt ("build a landing page for X"), and
-inside a sandbox it scaffolds a small app, runs `npm install` and a dev server,
-then exposes the port via a quick tunnel. The UI shows three live panes: the
-agent's tool-call stream (Flue + `@flue/react`), the build/run logs, and an
-iframe of the running app.
+inside a sandbox it scaffolds a small Worker app, installs dependencies, and
+deploys it to a real but temporary Cloudflare account with
+`wrangler deploy --temporary`. The agent curls its own deployment to verify it.
+The UI shows the agent's tool-call stream (Flue + `@flue/react`), the build and
+deploy logs, a live iframe of the deployed `workers.dev` URL, and a prominent
+"Claim this app" button (the claim URL) so the visitor can keep it.
 
 **Why this use case (and not simple code execution):** it needs a persistent
-Linux container, long-running processes, package installs, and a live exposed
-service. Dynamic Workers / codemode cannot do this, so it genuinely justifies
-`@cloudflare/sandbox`. It is keyless (Workers AI) and it is Flue-agent-driven,
-so it proves the project thesis. See "Module admission criteria" in AGENTS.md.
+Linux container to run `npm` and the Wrangler CLI and to deploy. Dynamic Workers
+/ codemode cannot run Wrangler or install packages, so it genuinely justifies
+`@cloudflare/sandbox`. It showcases three SOTA features at once: Flue (the
+agent), the Sandbox SDK (the build environment), and Temporary Accounts (the
+frictionless real deploy). It is keyless (temporary accounts need no
+credentials; Workers AI powers the model) and Flue-agent-driven, so it proves
+the project thesis. See "Module admission criteria" in AGENTS.md.
 
-**Exit criteria:** a working App Builder, Flue-agent-driven, that deploys via git
-push and is extractable as the per-module template.
+**Exit criteria:** a working App Builder, Flue-agent-driven, that deploys the
+generated app to a temporary account, surfaces the live URL and claim URL,
+deploys via git push, and is extractable as the per-module template.
 
 Build order (de-risked, riskiest integration validated early):
 
@@ -165,20 +171,28 @@ Build order (de-risked, riskiest integration validated early):
 2. **Flue validation (next):** install `@flue/runtime` + `@flue/react`; wire a
    minimal Flue agent on Workers AI that streams to the UI, with no sandbox, to
    prove the beta integration on the smallest possible surface.
-3. **App Builder backend:** sandbox process control (`startProcess`,
-   `exposePort` / `tunnels`) plus the Flue agent's build tools (write files, run
-   install, start dev server, expose).
-4. **App Builder UI:** prompt box, tool-call timeline, log pane, live iframe
-   preview; design tokens; registered as the first gallery tile.
+3. **App Builder backend:** the Flue agent's build-and-ship tools running in the
+   sandbox: write project files, install dependencies, run
+   `npx wrangler deploy --temporary`, and parse the live URL and claim URL from
+   the output. Stream logs back to the UI.
+4. **App Builder UI:** prompt box, tool-call timeline, log pane, live iframe of
+   the deployed app, and a "Claim this app" button; design tokens; registered as
+   the first gallery tile.
 5. **Template + agent-readiness:** extract `demos/_template/`, add a per-module
    `SKILL.md`, and confirm the module is extractable into its own repo.
 
 Notes:
-- Backed by Workers AI for the model, so no external API keys are required.
-- Live preview uses quick tunnels (`*.trycloudflare.com`), which work on
-  `.workers.dev` with no custom domain.
-- The stock `@cloudflare/sandbox` image (Node) is enough for a Vite/React or
-  Hono app; Python is not required for this module.
+- Model via Workers AI; deploy via Temporary Accounts. No external keys.
+- Requires Wrangler 4.102.0 or later in the container (use `npx wrangler@latest`
+  or pin `>= 4.102`). Do not pass any Cloudflare credentials into the container:
+  `--temporary` errors if the CLI is already authenticated.
+- Temporary deployments live for 60 minutes; the same temp account is reused for
+  redeploys within that window. Cloudflare applies a proof-of-work step and rate
+  limits on account creation, so space out repeated demos.
+- Output target is a Worker (a static-assets site or a small Hono app). Temporary
+  accounts support Workers + Static Assets (up to 1,000 files, 5 MiB each), which
+  is plenty for generated demos. The stock `@cloudflare/sandbox` image (Node) is
+  enough; Python is not required for this module.
 
 ### Future (not yet scoped)
 Additional modules and launch/enablement work are defined in a later revision
