@@ -1,24 +1,77 @@
-# AGENTS.md - cf-agentic-launchpad
+# AGENTS.md
 
-This file is the single source of truth for AI coding agents and contributors.
-Read it fully before generating or modifying code.
+A README for coding agents. This file gives AI agents (OpenCode, Codex, Cursor,
+Claude Code, Gemini CLI, and others) the context and rules needed to work in
+this repository. Human-facing docs live in README.md; agent-facing rules live
+here. Treat this as living documentation and keep it up to date.
 
-## What this project is
+Precedence note: the closest AGENTS.md to an edited file wins, and explicit user
+instructions in chat override this file.
 
-An open-source foundation for building demos on the Cloudflare agentic stack.
-The current scope is the **skeleton only**: a thin shell, a Worker backend,
-design tokens, agent-readiness scaffolding, and a git-push deploy pipeline.
-There are **no demo modules yet**; they are a later effort. Do not add modules
-unless the scope is explicitly expanded in PROJECTPLAN.md.
+## Project overview
 
-## House style (enforced)
+cf-agentic-launchpad is an open-source foundation for building demos on the
+Cloudflare agentic stack. The current scope is the **skeleton only**: a thin
+shell, a Worker backend, design tokens, agent-readiness scaffolding, and a
+git-push deploy pipeline. There are no demo modules yet. Do not add modules
+until PROJECTPLAN.md expands the scope. See PROJECTPLAN.md for the full plan.
 
-- **No em-dashes.** Never use the long dash character (U+2014) anywhere: not in
-  code, comments, docs, or commit messages. Use a regular hyphen '-' or
-  rephrase. Committed git hooks in `.githooks/` block any commit that violates
-  this. Run `bash scripts/setup-hooks.sh` once after cloning to enable them.
-- Prefer plain ASCII in prose. Arrows and separators already in the docs are
-  acceptable, but do not introduce em-dashes.
+## Setup commands
+
+```bash
+# One-time after cloning: enable the repo git hooks (em-dash guard)
+bash scripts/setup-hooks.sh
+
+# Install dependencies (available once the skeleton is scaffolded)
+npm install
+
+# Local dev (available once the skeleton is scaffolded)
+npm run dev
+```
+
+Note: the application build is not scaffolded yet. `npm install` and `npm run
+dev` land with the Phase 0 skeleton (see PROJECTPLAN.md, tickets CFAL-1 to
+CFAL-6). Until then, the only active command is the hook setup above.
+
+## Testing and verification
+
+Before finishing any task, run the checks that apply and fix all failures:
+
+- **Em-dash guard (always):** committing runs `.githooks/pre-commit` and
+  `.githooks/commit-msg`. Both block any em-dash (U+2014). If a commit is
+  blocked, replace the em-dash with a hyphen or rephrase, then retry.
+- **Typecheck, lint, build (once scaffolded):** the standard commands will be
+  `npm run typecheck`, `npm run lint`, and `npm run build`. Run them and ensure
+  they pass before declaring a task done. Update this section when they exist.
+
+## Code style
+
+- **No em-dashes anywhere.** Never use the long dash character (U+2014) in code,
+  comments, docs, or commit messages. Use a regular hyphen '-' or rephrase. This
+  is enforced by the git hooks described above.
+- Prefer plain ASCII in prose. Existing arrows and separators in the docs are
+  fine; do not introduce em-dashes.
+- TypeScript with strict mode (once the skeleton lands).
+- Styling uses only the in-repo design tokens. Never use raw hex values and
+  never add a second styling system.
+
+## Security considerations
+
+- Never commit secrets. Use `.env.example` for placeholders only. Real secrets
+  are set in the Cloudflare Workers Builds environment.
+- This is a public repository. Do not add private packages, internal URLs, or
+  internal product names.
+- Secret scanning and push protection are expected to stay enabled on the repo.
+
+## Commit and PR guidelines
+
+- Commit messages must be em-dash free (the commit-msg hook enforces this).
+- Write clear, imperative commit subjects (for example: "Add Worker entry").
+- Do not deploy by hand. Commit and push to `main`; Cloudflare Workers Builds
+  builds and deploys automatically. Never run `wrangler deploy`.
+- Remotes: GitHub (`cougz/cf-agentic-launchpad`) is primary and drives Workers
+  Builds; GitLab (`tim.seiffert/cf-agentic-launchpad`) is a dual-push mirror. A
+  plain `git push` writes to both.
 
 ## The stack (do not substitute)
 
@@ -29,43 +82,33 @@ unless the scope is explicitly expanded in PROJECTPLAN.md.
 - Code execution: `@cloudflare/codemode`. Filesystem: `@cloudflare/shell`.
 - Heavy compute: Cloudflare Containers (only when a full OS is required).
 - Web shell: React 19 + TanStack Router + Vite (thin chrome only).
-- Styling: Tailwind CSS + the in-repo design tokens. Never invent new colors;
-  use the tokens. No external or private design package.
+- Styling: Tailwind CSS + in-repo design tokens. No external design package.
 - Backend: Hono on Cloudflare Workers.
 - State: Durable Objects + KV.
-- Deploy: Workers Builds on git push. NEVER run `wrangler deploy` manually.
+- Deploy: Cloudflare Workers Builds on git push.
 
-## Rules
-
-1. Skeleton first. Keep the foundation clean and deployable; do not add demo
-   capabilities until PROJECTPLAN.md scopes them.
-2. No private packages, no internal URLs, no internal product names. This is a
-   public repository.
-3. No committed secrets. Use `.env.example` only. Real secrets are configured
-   in the Workers Builds environment.
-4. UI uses only the design tokens. No raw hex values, no parallel styling
-   systems.
-5. Deploy is git-driven. Commit and push to `main`; Workers Builds builds and
-   deploys. Do not deploy by hand.
-6. Keep `demos/` empty until modules are scoped. When modules arrive, each one
-   lives in `demos/<name>/`, is self-contained, and is extractable into its own
-   repo.
-
-## Repository layout
+## Repository structure
 
 ```
-AGENTS.md          # this file
+AGENTS.md          # this file: rules for coding agents
 README.md          # human overview
 PROJECTPLAN.md     # plan, scope, phases, tickets
 llms.txt           # machine-readable project spec (planned)
 wrangler.jsonc     # Worker config and bindings (planned)
-.githooks/         # em-dash guard hooks
+.githooks/         # em-dash guard hooks (pre-commit, commit-msg)
 scripts/           # setup-hooks.sh and future helpers
 src/
   shell/           # React + TanStack Router + Tailwind tokens (planned)
   worker/          # Hono router + agent-ready endpoints (planned)
-demos/             # empty; future home for modules
+demos/             # empty; future home for self-contained modules
 ```
+
+## Scope guardrails
+
+- Skeleton first. Keep the foundation clean and deployable. Do not implement
+  demo capabilities until PROJECTPLAN.md scopes them.
+- When modules are eventually added, each lives in `demos/<name>/`, is
+  self-contained, and is extractable into its own repo.
 
 ## Agent-readiness scaffolding
 
@@ -79,10 +122,8 @@ The skeleton establishes a discovery surface that future modules inherit:
 
 Reference: https://isitagentready.com
 
-## Git and deploy
+## Nested AGENTS.md (future)
 
-- Remotes: GitHub (`cougz/cf-agentic-launchpad`) is primary; GitLab
-  (`tim.seiffert/cf-agentic-launchpad`) is a dual-push mirror. A plain
-  `git push` writes to both.
-- Commit messages must be em-dash free (the commit-msg hook enforces this).
-- Push to `main`; Workers Builds handles deployment.
+When `demos/` gains modules, add a dedicated `AGENTS.md` inside each module
+directory. Agents read the nearest file first, so each module can carry tailored
+instructions while this root file holds the shared rules.
