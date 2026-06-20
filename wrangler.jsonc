@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cf-agentic-launchpad",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2026-06-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  }
+  // Bindings such as Durable Objects, KV, and AI are added when modules
+  // need them. They are intentionally omitted from the skeleton so the
+  // app deploys with zero manual resource setup. Example (add later):
+  //
+  // "ai": { "binding": "AI" },
+  // "kv_namespaces": [{ "binding": "KV", "id": "<created-id>" }],
+  // "durable_objects": { "bindings": [{ "name": "AGENT", "class_name": "Agent" }] },
+  // "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Agent"] }]
+}
