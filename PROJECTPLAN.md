@@ -57,39 +57,43 @@ The application is built on exactly the stack it advocates - it dogfoods its own
 |-------|--------|-------|
 | Agent framework | **Flue** (`@flue/runtime`) | The foundation for any future agent. Pinned version. |
 | Agent -> UI streaming | **`@flue/react`** | Streams state, tool calls, live messages. |
+| Build | **Flue owns the Worker build** | `flue build --target cloudflare` generates the entry, DO classes, and deploy config. |
 | Harness | **Pi** (via Flue) | Inherited through Flue. |
-| Runtime | **Agents SDK** | Underneath Flue; each agent -> Durable Object. |
-| Code execution | **`@cloudflare/codemode`** | Sandboxed dynamic Workers. |
-| Filesystem | **`@cloudflare/shell`** | Durable virtual FS in the DO. |
-| Heavy compute | **Cloudflare Containers** | For future work needing a full OS. |
-| Web shell | **React 19 + TanStack Router + Vite** | Thin chrome only. |
-| Visual layer | **Tailwind CSS + self-contained design tokens** | Clean canvas, orange accent, OKLCH, automatic light/dark. Defined in-repo; no external dependency. |
-| HTTP/backend | **Hono on Workers** | Router + API surface. |
-| State/storage | **Durable Objects + KV** | Pre-wired bindings. |
-| Deploy | **Workers Builds** (git-push) | No manual `wrangler deploy`. |
+| Runtime | **Agents SDK** (`agents` 0.14.x) | Underneath Flue; each agent -> Durable Object. |
+| Models | **Workers AI binding (keyless)** | `cloudflare/...` provider via the `AI` binding. No API key. |
+| Container sandbox | **`@cloudflare/sandbox`** | For the App Builder; exported from `src/cloudflare.ts`. |
+| Web shell | **React 19 + TanStack Router + Vite** | Built to `dist/client`, served via `ASSETS`. |
+| Visual layer | **Tailwind CSS v4 + self-contained design tokens** | Clean canvas, orange accent, OKLCH, automatic light/dark. |
+| HTTP/backend | **Hono in `src/app.ts`** | Our routes mounted with `flue()`. |
+| Deploy | **Workers Builds** (git-push) | Deploys Flue's generated config. |
 
 ---
 
 ## 5. Architecture
 
-### 5.1 Shape - skeleton + a ready (empty) module surface
+### 5.1 Shape - Flue-built Worker (src layout)
 ```
 cf-agentic-launchpad/
-|- AGENTS.md                # conventions for AI coding agents (single source of truth)
-|- llms.txt                 # machine-readable project spec
-|- LICENSE                  # open-source license
-|- wrangler.jsonc           # Workers Builds reads this; DO/AI/KV bindings pre-wired
-|- src/
-|  |- shell/                # React + TanStack Router + Tailwind tokens - gallery & nav
-|  |- worker/               # Hono router + agent-ready endpoints
-|- demos/                   # empty - modules are a future effort
+|- AGENTS.md                # conventions for AI coding agents (source of truth)
+|- LICENSE                  # open-source license (MIT)
+|- index.html               # Vite client entry
+|- vite.config.ts           # client build (React + Tailwind) -> dist/client
+|- wrangler.jsonc           # source config Flue reads (bindings, migrations, container, assets)
+|- Dockerfile               # container image for the Sandbox module
+|- src/                     # Flue source dir
+|  |- app.ts                # Hono: agent-ready endpoints + sandbox API + flue()
+|  |- cloudflare.ts         # Cloudflare-only exports (export Sandbox)
+|  |- agents/app-builder.ts # the App Builder Flue agent
+|  |- routes/sandbox.ts     # plain Hono sub-app (sandbox exec/run/files)
+|  |- shell/                # React + TanStack Router + Tailwind tokens (client)
+|- dist/                    # GENERATED: dist/client + dist/cf_agentic_launchpad (gitignored)
 ```
 
 ### 5.2 Key principles
-- **Skeleton first:** ship a clean, deployable foundation before any module work.
-- **Ready to extend:** `demos/` exists as the future home for self-contained modules.
-- **Display vs. logic split:** when modules arrive, Flue owns agent logic; React + Tailwind is only chrome.
-- **Dogfooding:** the foundation uses exactly the stack it advocates.
+- **Built on Flue:** Flue owns the Worker build; the launchpad is itself proof of the stack.
+- **One unified Worker:** gallery shell + agents + sandbox + custom routes, all in one Flue-built Worker.
+- **Display vs. logic split:** Flue owns agent logic; React + Tailwind is only chrome.
+- **Keyless:** models via the Workers AI binding; no external API keys.
 - **No private dependencies:** everything resolvable from public registries.
 
 ---
@@ -168,11 +172,15 @@ Build order (de-risked, riskiest integration validated early):
    a container-backed Durable Object; exec, run, and file read/write/list under
    `/demos/sandbox/api`; Dockerfile and container config. Deployed and verified
    live (exec and JS/TS interpreter work).
-2. **Flue validation (next):** install `@flue/runtime` + `@flue/react`; wire a
-   minimal Flue agent on Workers AI that streams to the UI, with no sandbox, to
-   prove the beta integration on the smallest possible surface.
-3. **App Builder backend:** the Flue agent's build-and-ship tools running in the
-   sandbox: write project files, install dependencies, run
+2. **Flue build + minimal agent (done):** restructured to Flue's Cloudflare
+   build (`flue build --target cloudflare`). `src/app.ts` mounts `flue()` plus
+   our routes; `src/cloudflare.ts` exports the Sandbox class; `src/agents/
+   app-builder.ts` is a minimal keyless agent (Workers AI binding). Client builds
+   to `dist/client`, served via `ASSETS`. Build, typecheck, and `wrangler
+   --dry-run` all pass under Node 22.
+3. **App Builder backend (next):** attach the container sandbox to the agent
+   (`cloudflareSandbox(getSandbox(env.Sandbox, id))`) and its build-and-ship
+   tools: write project files, install dependencies, run
    `npx wrangler deploy --temporary`, and parse the live URL and claim URL from
    the output. Stream logs back to the UI.
 4. **App Builder UI:** prompt box, tool-call timeline, log pane, live iframe of
@@ -203,7 +211,7 @@ once the Sandbox pattern is proven.
 ## 10. Repo & CI/CD Strategy
 - **Public remote:** GitHub (`cougz/cf-agentic-launchpad`).
 - **Mirror remote:** GitLab (`tim.seiffert/cf-agentic-launchpad`) via dual-push.
-- **Workers Builds** auto-deploys on push to `main`; secrets configured in the Builds environment.
+- **Workers Builds** auto-deploys on push to `main`. Build command `npm run build` (client + `flue build`); deploy command `npx wrangler deploy --config dist/cf_agentic_launchpad/wrangler.json` (Flue's generated config).
 - `wrangler.jsonc` carries all bindings (DO, AI, KV) so Builds needs zero manual config.
 - Public-repo hygiene: secret scanning, `.env.example`, no committed credentials.
 

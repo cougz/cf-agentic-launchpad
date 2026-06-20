@@ -1,24 +1,39 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "cf-agentic-launchpad",
-  "main": "./src/worker/index.ts",
   "compatibility_date": "2026-06-20",
   "compatibility_flags": ["nodejs_compat"],
+
+  // Flue owns the Worker entry. It reads this config, merges its generated
+  // agent/workflow Durable Object bindings, and writes a deployable config to
+  // dist/cf_agentic_launchpad/wrangler.json. Deploy THAT generated config.
+
   "assets": {
+    "directory": "./dist/client",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Only these prefixes reach the Worker (Hono + Flue); everything else is a
+    // static asset with SPA fallback. Include our routes and every Flue prefix.
+    "run_worker_first": [
+      "/llms.txt",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/demos/*",
+      "/agents/*",
+      "/workflows/*",
+      "/runs/*",
+      "/channels/*"
+    ]
   },
-  "observability": {
-    "enabled": true
-  },
-  // Declared explicitly so deploys do not emit default-behavior warnings.
-  // workers_dev: serve on the <name>.<subdomain>.workers.dev URL.
-  // preview_urls: per-version preview URLs (handy with Workers Builds).
+
+  "observability": { "enabled": true },
   "workers_dev": true,
   "preview_urls": true,
 
-  // Sandbox module (@cloudflare/sandbox): a container-backed Durable Object
-  // that executes code and commands in an isolated Linux environment.
+  // Workers AI binding: keyless model access for Flue's cloudflare/... provider.
+  "ai": { "binding": "AI" },
+
+  // Sandbox module: container-backed Durable Object (the App Builder uses it).
   "containers": [
     {
       "class_name": "Sandbox",
@@ -30,9 +45,11 @@
   "durable_objects": {
     "bindings": [{ "class_name": "Sandbox", "name": "Sandbox" }]
   },
-  "migrations": [{ "new_sqlite_classes": ["Sandbox"], "tag": "v1" }]
 
-  // Additional bindings (KV, AI) are added when modules need them.
-  // "ai": { "binding": "AI" },
-  // "kv_namespaces": [{ "binding": "KV", "id": "<created-id>" }]
+  // We own the ordered migration history. v1 (Sandbox) is already deployed, so
+  // Flue classes are appended in v2. Keep this append-only.
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Sandbox"] },
+    { "tag": "v2", "new_sqlite_classes": ["FlueRegistry", "FlueAppBuilderAgent"] }
+  ]
 }

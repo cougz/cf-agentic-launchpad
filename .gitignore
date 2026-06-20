@@ -9,7 +9,11 @@ dist/
 .output/
 build/
 
-# Environment & secrets — NEVER commit
+# Flue build intermediates
+.flue-vite/
+.flue-vite.wrangler.jsonc
+
+# Environment and secrets - NEVER commit
 .env
 .env.*
 !.env.example

@@ -4,7 +4,7 @@
 
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 [![Flue](https://img.shields.io/badge/framework-Flue-FF5E1F)](https://flueframework.com)
-[![Status](https://img.shields.io/badge/status-Phase%200%20·%20Skeleton-blue)]()
+[![Status](https://img.shields.io/badge/status-Phase%201%20·%20App%20Builder-blue)]()
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cougz/cf-agentic-launchpad)
 
@@ -12,46 +12,40 @@
 
 ## What this is
 
-**cf-agentic-launchpad** is the foundation for a demo gallery on Cloudflare's agentic platform. The initial milestone is the **skeleton only**: a thin shell, a Worker backend, design tokens, agent-readiness scaffolding, and a one-push deploy pipeline. Capability modules are intentionally **out of scope for now** - the skeleton comes first.
-
-Once the foundation is in place, modules can be added as self-contained, extractable units. The project is built on the **publicly advocated three-layer agentic stack** - it dogfoods its own message:
+**cf-agentic-launchpad** is a demo gallery on Cloudflare's agentic platform. It is built on the **publicly advocated three-layer agentic stack**, and it dogfoods its own message: on Cloudflare, **Flue builds the Worker itself**.
 
 ```
-Framework   →  Flue           ← agents are built here
+Framework   →  Flue           ← agents are built here; Flue builds the Worker
 Harness     →  Pi             ← Flue wraps this
-Runtime     →  Agents SDK     ← becomes a Durable Object on Cloudflare
+Runtime     →  Agents SDK     ← each agent becomes a Durable Object on Cloudflare
 ```
+
+The foundation (shell, design tokens, agent-readiness, git-push deploy) is in place. Phase 1 builds the first module, the **AI App Builder**: a Flue agent that scaffolds a small app inside a `@cloudflare/sandbox` container and ships it to a real **temporary Cloudflare account**, returning a live URL and a claim link.
 
 ## The stack
 
 | Layer | Choice |
 |-------|--------|
-| Agent framework | [Flue](https://flueframework.com) (`@flue/runtime`) |
-| Agent → UI streaming | `@flue/react` |
-| Harness | Pi (via Flue) |
-| Runtime | [Cloudflare Agents SDK](https://developers.cloudflare.com/agents/) - each agent is a Durable Object |
-| Code execution | `@cloudflare/codemode` |
-| Filesystem | `@cloudflare/shell` |
-| Heavy compute | [Cloudflare Containers](https://developers.cloudflare.com/containers/) |
-| Web shell | React 19 + TanStack Router + Vite |
-| Styling | Tailwind CSS + self-contained design tokens (clean canvas, orange accent, OKLCH, automatic light/dark) |
-| Backend | [Hono](https://hono.dev) on Cloudflare Workers |
-| State | Durable Objects + KV |
-| Deploy | [Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) (git push) |
+| Build | [Flue](https://flueframework.com) owns the Worker build (`flue build --target cloudflare`) |
+| Agent framework | Flue (`@flue/runtime`, `@flue/cli`); agents in `src/agents/` |
+| Agent → UI streaming | `@flue/react` (agent stream at `GET /agents/<name>/:id`) |
+| Harness / Runtime | Pi (via Flue) over the [Cloudflare Agents SDK](https://developers.cloudflare.com/agents/); each agent is a Durable Object |
+| Models | Workers AI binding, keyless (`cloudflare/...` provider) |
+| Container sandbox | [`@cloudflare/sandbox`](https://developers.cloudflare.com/sandbox/) (App Builder module) |
+| HTTP | [Hono](https://hono.dev) in `src/app.ts`, mounting `flue()` |
+| Web shell | React 19 + TanStack Router + Vite, served via the `ASSETS` binding |
+| Styling | Tailwind CSS v4 + self-contained design tokens (clean canvas, orange accent, OKLCH, automatic light/dark) |
+| Deploy | [Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) (git push), deploying Flue's generated config |
 
 ## Current scope
 
-The first deliverable is the **walking skeleton**:
+- Foundation (done): Flue-built Worker, React shell served via `ASSETS`,
+  design tokens, agent-readiness endpoints, container sandbox wired in, git-push
+  deploy. Deployed and verified live.
+- Phase 1 (in progress): the **AI App Builder** module. A minimal Flue agent is
+  in place; next steps attach the sandbox build-and-ship tools and the UI.
 
-- Thin React + TanStack Router shell with an (empty) gallery surface
-- Hono Worker backend with bindings pre-wired
-- Self-contained design-token set
-- Agent-readiness scaffolding (`llms.txt`, `AGENTS.md`)
-- Git-push deploy via Workers Builds
-
-There are **no demo modules yet** - they are a later effort, added on top of this foundation.
-
-See [`PROJECTPLAN.md`](./PROJECTPLAN.md) for the full plan and Phase 0 tickets.
+See [`PROJECTPLAN.md`](./PROJECTPLAN.md) for the full plan.
 
 ## Quick start
 
@@ -59,11 +53,12 @@ See [`PROJECTPLAN.md`](./PROJECTPLAN.md) for the full plan and Phase 0 tickets.
 git clone git@github.com:cougz/cf-agentic-launchpad.git
 cd cf-agentic-launchpad
 npm install
-npm run dev
+bash scripts/setup-hooks.sh   # enable the em-dash guard hooks
+npm run dev                   # Flue dev server (Worker + agents), port 3583
+npm run dev:client            # or: the React shell via Vite
 ```
 
-The Phase 0 skeleton is in place: the dev server, build, and deploy pipeline
-all work. Demo modules are still out of scope (a later phase).
+Requires Node 22 (see `.nvmrc`) and, for the container sandbox, Docker locally.
 
 ## Deployment
 
@@ -82,19 +77,21 @@ If you already have the repo, connect Workers Builds once in the dashboard:
 
 1. Cloudflare dashboard, then Workers & Pages, then Create, then Connect to Git.
 2. Select your fork of `cf-agentic-launchpad`.
-3. Build command: `npm run build`
-4. Deploy command: `npx wrangler deploy`
+3. Build command: `npm run build` (runs `vite build` then `flue build --target cloudflare`)
+4. Deploy command: `npx wrangler deploy --config dist/cf_agentic_launchpad/wrangler.json`
 
-After that, deployment is fully git-driven: push to `main` and the application
-builds and deploys automatically. Do not run `wrangler deploy` by hand.
+The deploy command must target Flue's **generated** config, not the source-root
+`wrangler.jsonc` (Flue generates the Worker entry and bindings at build time).
+After that, deployment is git-driven: push to `main` and it builds and deploys.
 
 Notes:
 
 - The build runs on Node 22 (see `.nvmrc`). Workers Builds auto-detects it.
-- `workers_dev` and `preview_urls` are set in `wrangler.jsonc`, so the deploy
-  serves on a `*.workers.dev` URL and produces per-version preview URLs.
-- No secrets are required for the skeleton. When modules need them, add them in
-  the Workers Builds environment settings, never in the repo.
+- The Sandbox module uses Cloudflare Containers, so a **Workers Paid plan** and
+  Docker (in the build environment) are required.
+- `workers_dev` and `preview_urls` are set, so the deploy serves on a
+  `*.workers.dev` URL with per-version preview URLs.
+- The agent uses the keyless Workers AI binding, so no model API key is needed.
 
 ## Development
 
