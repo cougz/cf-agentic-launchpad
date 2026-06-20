@@ -18,20 +18,18 @@ until PROJECTPLAN.md expands the scope. See PROJECTPLAN.md for the full plan.
 
 ## Setup commands
 
+Use Node 22 (see `.nvmrc`).
+
 ```bash
 # One-time after cloning: enable the repo git hooks (em-dash guard)
 bash scripts/setup-hooks.sh
 
-# Install dependencies (available once the skeleton is scaffolded)
+# Install dependencies
 npm install
 
-# Local dev (available once the skeleton is scaffolded)
+# Local dev server (Vite + the Worker via @cloudflare/vite-plugin)
 npm run dev
 ```
-
-Note: the application build is not scaffolded yet. `npm install` and `npm run
-dev` land with the Phase 0 skeleton (see PROJECTPLAN.md, tickets CFAL-1 to
-CFAL-6). Until then, the only active command is the hook setup above.
 
 ## Testing and verification
 
@@ -40,9 +38,9 @@ Before finishing any task, run the checks that apply and fix all failures:
 - **Em-dash guard (always):** committing runs `.githooks/pre-commit` and
   `.githooks/commit-msg`. Both block any em-dash (U+2014). If a commit is
   blocked, replace the em-dash with a hyphen or rephrase, then retry.
-- **Typecheck, lint, build (once scaffolded):** the standard commands will be
-  `npm run typecheck`, `npm run lint`, and `npm run build`. Run them and ensure
-  they pass before declaring a task done. Update this section when they exist.
+- **Typecheck and build:** run `npm run typecheck` and `npm run build` and
+  ensure both pass before declaring a task done. A lint script is not set up
+  yet; add one and update this section when it exists.
 
 ## Code style
 
@@ -51,9 +49,9 @@ Before finishing any task, run the checks that apply and fix all failures:
   is enforced by the git hooks described above.
 - Prefer plain ASCII in prose. Existing arrows and separators in the docs are
   fine; do not introduce em-dashes.
-- TypeScript with strict mode (once the skeleton lands).
-- Styling uses only the in-repo design tokens. Never use raw hex values and
-  never add a second styling system.
+- TypeScript with strict mode (enabled in `tsconfig.json`).
+- Styling uses only the in-repo design tokens (`src/shell/tokens.css`). Never
+  use raw hex values and never add a second styling system.
 
 ## Security considerations
 
@@ -93,15 +91,21 @@ Before finishing any task, run the checks that apply and fix all failures:
 AGENTS.md          # this file: rules for coding agents
 README.md          # human overview
 PROJECTPLAN.md     # plan, scope, phases, tickets
-llms.txt           # machine-readable project spec (planned)
-wrangler.jsonc     # Worker config and bindings (planned)
+index.html         # Vite client entry
+vite.config.ts     # Vite + React + Cloudflare + Tailwind plugins
+wrangler.jsonc     # Worker config and bindings
+tsconfig.json      # TypeScript config (strict)
 .githooks/         # em-dash guard hooks (pre-commit, commit-msg)
 scripts/           # setup-hooks.sh and future helpers
 src/
-  shell/           # React + TanStack Router + Tailwind tokens (planned)
-  worker/          # Hono router + agent-ready endpoints (planned)
+  shell/           # React + TanStack Router + Tailwind tokens
+    routes/        # route components
+  worker/          # Hono router + agent-ready endpoints (serves /llms.txt)
 demos/             # empty; future home for self-contained modules
 ```
+
+Note: `llms.txt` is served by the Worker at `/llms.txt` (its source lives in
+`src/worker/index.ts`); it is not a standalone file in the repo.
 
 ## Scope guardrails
 

@@ -6,6 +6,8 @@
 [![Flue](https://img.shields.io/badge/framework-Flue-FF5E1F)](https://flueframework.com)
 [![Status](https://img.shields.io/badge/status-Phase%200%20·%20Skeleton-blue)]()
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cougz/cf-agentic-launchpad)
+
 ---
 
 ## What this is
@@ -60,11 +62,39 @@ npm install
 npm run dev
 ```
 
-> The application is under active construction (Phase 0). Commands and structure will land as the walking skeleton is built.
+The Phase 0 skeleton is in place: the dev server, build, and deploy pipeline
+all work. Demo modules are still out of scope (a later phase).
 
 ## Deployment
 
-Deployment is fully git-driven via **Cloudflare Workers Builds** - push to `main` and the application builds and deploys automatically. There is no manual `wrangler deploy` step.
+### One-click
+
+Use the button at the top of this README, or this link:
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cougz/cf-agentic-launchpad)
+
+This forks the repo into your account, provisions the Worker, and connects
+Cloudflare Workers Builds so every push to `main` redeploys automatically.
+
+### Connect manually
+
+If you already have the repo, connect Workers Builds once in the dashboard:
+
+1. Cloudflare dashboard, then Workers & Pages, then Create, then Connect to Git.
+2. Select your fork of `cf-agentic-launchpad`.
+3. Build command: `npm run build`
+4. Deploy command: `npx wrangler deploy`
+
+After that, deployment is fully git-driven: push to `main` and the application
+builds and deploys automatically. Do not run `wrangler deploy` by hand.
+
+Notes:
+
+- The build runs on Node 22 (see `.nvmrc`). Workers Builds auto-detects it.
+- `workers_dev` and `preview_urls` are set in `wrangler.jsonc`, so the deploy
+  serves on a `*.workers.dev` URL and produces per-version preview URLs.
+- No secrets are required for the skeleton. When modules need them, add them in
+  the Workers Builds environment settings, never in the repo.
 
 ## Development
 

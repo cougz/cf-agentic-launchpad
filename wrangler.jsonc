@@ -10,7 +10,12 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // Declared explicitly so deploys do not emit default-behavior warnings.
+  // workers_dev: serve on the <name>.<subdomain>.workers.dev URL.
+  // preview_urls: per-version preview URLs (handy with Workers Builds).
+  "workers_dev": true,
+  "preview_urls": true
   // Bindings such as Durable Objects, KV, and AI are added when modules
   // need them. They are intentionally omitted from the skeleton so the
   // app deploys with zero manual resource setup. Example (add later):
