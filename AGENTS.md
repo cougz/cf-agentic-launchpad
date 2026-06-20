@@ -111,10 +111,33 @@ Note: `llms.txt` is served by the Worker at `/llms.txt` (its source lives in
 
 ## Scope guardrails
 
-- Skeleton first. Keep the foundation clean and deployable. Do not implement
-  demo capabilities until PROJECTPLAN.md scopes them.
-- When modules are eventually added, each lives in `demos/<name>/`, is
-  self-contained, and is extractable into its own repo.
+- Keep the foundation clean and deployable. Implement demo capabilities only
+  when PROJECTPLAN.md scopes them.
+- Each module lives in `demos/<name>/`, is self-contained, and is extractable
+  into its own repo.
+
+## Module admission criteria
+
+Every module must pass all of these before it is built. They keep modules
+aligned with the reason this project exists: showcasing the Cloudflare agentic
+stack (Flue over Pi over the Agents SDK). If a proposed module fails any of
+these, do not build it; propose a better-fitting one.
+
+1. **Flue agent first.** The module's primary actor is a Flue agent, with its
+   activity streamed to the UI via `@flue/react`. A passive capability behind a
+   button does not qualify.
+2. **Justify the primitive.** Use a Cloudflare capability that simpler
+   primitives cannot provide. In particular, use `@cloudflare/sandbox` only when
+   a persistent Linux container is genuinely required (long-running processes,
+   PTY terminals, package installs, live exposed services). If Dynamic Workers
+   or codemode would suffice, use those instead.
+3. **Keyless when possible.** Prefer Workers AI so the one-click deploy works
+   with no external keys. If a key is unavoidable, state it clearly and degrade
+   gracefully.
+4. **Self-contained and extractable.** Lives in `demos/<name>/` and can be
+   lifted into its own repo.
+5. **Agent-ready.** Ships the discovery surface and a `SKILL.md`.
+6. **On-brand.** Uses only the in-repo design tokens; no parallel styling.
 
 ## Agent-readiness scaffolding
 

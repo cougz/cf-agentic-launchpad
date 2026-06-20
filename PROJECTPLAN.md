@@ -140,28 +140,45 @@ Reference: [isitagentready.com](https://isitagentready.com)
 - React + TanStack + Hono shell; empty gallery surface; deployed. Done.
 - Agent-readiness scaffolding and `AGENTS.md`. Done.
 
-### Phase 1 - Sandbox module (in progress)
-**Exit criteria:** a working Sandbox demo, built on the Flue stack, that deploys
-via git push and is extractable as the per-module template.
+### Phase 1 - Sandbox module: AI App Builder (in progress)
+**Experience:** a Flue agent takes a prompt ("build a landing page for X"), and
+inside a sandbox it scaffolds a small app, runs `npm install` and a dev server,
+then exposes the port via a quick tunnel. The UI shows three live panes: the
+agent's tool-call stream (Flue + `@flue/react`), the build/run logs, and an
+iframe of the running app.
 
-Build order (de-risked, simplest surface first):
+**Why this use case (and not simple code execution):** it needs a persistent
+Linux container, long-running processes, package installs, and a live exposed
+service. Dynamic Workers / codemode cannot do this, so it genuinely justifies
+`@cloudflare/sandbox`. It is keyless (Workers AI) and it is Flue-agent-driven,
+so it proves the project thesis. See "Module admission criteria" in AGENTS.md.
 
-1. **Backend plumbing (done):** `@cloudflare/sandbox` wired into the Worker as a
-   container-backed Durable Object. `demos/sandbox/routes.ts` exposes exec, run
-   (code interpreter), and file read/write/list under `/demos/sandbox/api`.
-   Dockerfile and container config in `wrangler.jsonc`. Build and typecheck pass.
-2. **Module UI:** a Sandbox console route in the shell (command input, output,
-   code runner, file view) using the design tokens; registered as a gallery tile.
-3. **Flue agent:** a Flue agent that drives the sandbox as a tool, with
-   `@flue/react` streaming tool calls and results into the UI. This is the
-   headline of the showcase and the riskiest part (Flue is beta), so it is
-   layered on last, on top of a proven sandbox + UI.
-4. **Template + agent-readiness:** extract `demos/_template/`, add a per-module
+**Exit criteria:** a working App Builder, Flue-agent-driven, that deploys via git
+push and is extractable as the per-module template.
+
+Build order (de-risked, riskiest integration validated early):
+
+1. **Sandbox primitives (done):** `@cloudflare/sandbox` wired into the Worker as
+   a container-backed Durable Object; exec, run, and file read/write/list under
+   `/demos/sandbox/api`; Dockerfile and container config. Deployed and verified
+   live (exec and JS/TS interpreter work).
+2. **Flue validation (next):** install `@flue/runtime` + `@flue/react`; wire a
+   minimal Flue agent on Workers AI that streams to the UI, with no sandbox, to
+   prove the beta integration on the smallest possible surface.
+3. **App Builder backend:** sandbox process control (`startProcess`,
+   `exposePort` / `tunnels`) plus the Flue agent's build tools (write files, run
+   install, start dev server, expose).
+4. **App Builder UI:** prompt box, tool-call timeline, log pane, live iframe
+   preview; design tokens; registered as the first gallery tile.
+5. **Template + agent-readiness:** extract `demos/_template/`, add a per-module
    `SKILL.md`, and confirm the module is extractable into its own repo.
 
 Notes:
 - Backed by Workers AI for the model, so no external API keys are required.
-- Preview URLs (port exposure) use quick tunnels, which work on `.workers.dev`.
+- Live preview uses quick tunnels (`*.trycloudflare.com`), which work on
+  `.workers.dev` with no custom domain.
+- The stock `@cloudflare/sandbox` image (Node) is enough for a Vite/React or
+  Hono app; Python is not required for this module.
 
 ### Future (not yet scoped)
 Additional modules and launch/enablement work are defined in a later revision
