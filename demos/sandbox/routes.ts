@@ -22,6 +22,14 @@ async function readJson<T>(c: { req: { json: () => Promise<unknown> } }): Promis
 
 export const sandboxRoutes = new Hono<{ Bindings: Bindings }>();
 
+// Turn thrown errors into informative JSON instead of an opaque 500.
+sandboxRoutes.onError((err, c) => {
+  return c.json(
+    { error: "sandbox_error", message: err instanceof Error ? err.message : String(err) },
+    500,
+  );
+});
+
 // Run a shell command in the sandbox.
 sandboxRoutes.post("/exec", async (c) => {
   const { command } = await readJson<{ command: string }>(c);
@@ -40,6 +48,9 @@ sandboxRoutes.post("/exec", async (c) => {
 });
 
 // Run code via the code interpreter (rich outputs, state per context).
+// Note: the stock @cloudflare/sandbox image ships Node only, so the default is
+// JavaScript. JavaScript and TypeScript work out of the box. Python requires
+// extending the Dockerfile to install it.
 sandboxRoutes.post("/run", async (c) => {
   const { code, language } = await readJson<{
     code: string;
@@ -49,7 +60,7 @@ sandboxRoutes.post("/run", async (c) => {
     return c.json({ error: "Missing 'code'." }, 400);
   }
   const sandbox = getSandbox(c.env.Sandbox, SANDBOX_ID);
-  const result = await sandbox.runCode(code, { language: language ?? "python" });
+  const result = await sandbox.runCode(code, { language: language ?? "javascript" });
   return c.json(result);
 });
 
